@@ -1,0 +1,29 @@
+/* Appliquer un style fixe à tous les boutons */
+.button {
+    -fx-background-color: #4CAF50; /* Couleur de fond verte */
+    -fx-text-fill: white; /* Couleur du texte en blanc */
+    -fx-font-size: 16px; /* Taille de la police */
+    -fx-padding: 10px 20px; /* Padding interne */
+    -fx-border-radius: 5px; /* Bordure arrondie */
+    -fx-background-radius: 5px; /* Arrondi du fond */
+}
+
+/* Empêcher toute modification de style lors du survol (pas de changement d'apparence) */
+.button:hover {
+    -fx-background-color: #81b882; /* Même couleur de fond qu'à l'état normal */
+    -fx-text-fill: white; /* Couleur du texte identique */
+    -fx-font-size: 16px; /* Taille de la police inchangée */
+    -fx-padding: 10px 20px; /* Padding inchangé */
+    -fx-border-radius: 5px; /* Bordure arrondie inchangée */
+    -fx-background-radius: 5px; /* Arrondi du fond inchangé */
+}
+
+/* Empêcher le changement de style lorsqu'on clique sur le bouton */
+.button:pressed {
+    -fx-background-color: #4CAF50; /* Pas de changement de couleur au clic */
+    -fx-text-fill: white; /* Pas de changement de couleur du texte */
+    -fx-font-size: 16px; /* Pas de changement de taille de police */
+    -fx-padding: 10px 20px; /* Padding inchangé */
+    -fx-border-radius: 5px; /* Pas de changement de bordure */
+    -fx-background-radius: 5px; /* Pas de changement d'arrondi */
+}
