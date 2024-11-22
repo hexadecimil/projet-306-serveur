@@ -1,12 +1,18 @@
 package app.ihm;
 
 import app.ctrl.IControllerForView;
+import javafx.application.Platform;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 import java.awt.event.ActionEvent;
+import java.awt.image.BufferedImage;
 import java.net.URL;
 import java.util.ResourceBundle;
 
@@ -16,16 +22,19 @@ import java.util.ResourceBundle;
  * @created 18-nov.-2024 16:36:24
  */
 public class View implements IViewForController, Initializable {
-
-	private IControllerForView controller;
 	@FXML
-	private Label labelConnect;
+	public ImageView frameBox;
+	private IControllerForView controller;
 	@FXML
 	private TextField userField;
 	@FXML
 	private TextField passwordField;
 	@FXML
 	private Label errorLabel;
+	@FXML
+	private Label labelConnect;
+	@FXML
+	private Button connectionButton;
 
 	public View(){
 
@@ -33,11 +42,13 @@ public class View implements IViewForController, Initializable {
 
 	@Override
 	public void initialize(URL url, ResourceBundle rb){
-
 	}
 
-	public void afficherImageWebcam(){
-
+	public void afficherImageWebcam(BufferedImage image){
+		if (frameBox!=null) {
+			Image frame = SwingFXUtils.toFXImage(image, null);
+			frameBox.setImage(frame);
+		}
 	}
 
 	public void afficherVueConnexion(){
@@ -56,8 +67,9 @@ public class View implements IViewForController, Initializable {
 
 	}
 
+	@FXML
 	public void onAutoriserConnection(){
-		controller.actionAutoriserConnection(true);
+		controller.actionAutoriserConnection();
 	}
 
 	public void onDisconnectionUser(ActionEvent e){
@@ -70,6 +82,14 @@ public class View implements IViewForController, Initializable {
 
 	public void connectCredentialsError() {
 		errorLabel.setVisible(true);
+	}
+
+	public void serverOn(boolean isOn) {
+		if (isOn) {
+			connectionButton.setText("Fermer serveur");
+		} else {
+			connectionButton.setText("Allumer serveur");
+		}
 	}
 
 	@Deprecated

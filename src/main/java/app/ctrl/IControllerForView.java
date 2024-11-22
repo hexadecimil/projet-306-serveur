@@ -8,10 +8,7 @@ package app.ctrl;
  */
 public interface IControllerForView {
 
-	void actionAutoriserConnection(boolean autoriser);
+	void actionAutoriserConnection();
 
 	void actionConnectionUser(String utilisateur, String motDePasse);
-
-	void actionDisconnectionUser();
-
 }

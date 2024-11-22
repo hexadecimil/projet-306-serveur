@@ -12,7 +12,4 @@ public class ServiceWebcam {
 
 	}
 
-	public void finalize() throws Throwable {
-
-	}
-}//end ServiceWebcam
+}

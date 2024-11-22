@@ -4,6 +4,10 @@ import app.helpers.JfxPopup;
 import app.ihm.IViewForController;
 import app.ihm.View;
 import app.services.*;
+import com.phidget22.Net;
+import com.phidget22.PhidgetException;
+import com.phidget22.ServerType;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -11,6 +15,7 @@ import javafx.stage.Stage;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.net.SocketException;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,16 +33,34 @@ public class Controller implements IControllerForWebcam, IControllerDistanceRada
 	private MySQL mySQL;
 	private MyWebCam myWebCam;
 	private Rover rover;
-	private WebcamServer webcamServer;
+	private WebcamServer webcamServer = null;
 	private WrkServer wrkServer;
 	private IViewForController viewForController;
 	private Stage stage;
+	public final static int VINT_HUB_SERIAL = 667681;
+	private boolean wallDetected = false;
 
 	public Controller(Stage stage){
+
 		this.stage = stage;
 		this.mySQL = new MySQL();
 		this.wrkServer = new WrkServer(this);
-	}
+        try {
+		  	Net.enableServerDiscovery(ServerType.DEVICE_REMOTE);
+			System.out.println("creation rover");
+            //this.rover = new Rover(VINT_HUB_SERIAL);
+			System.out.println("creation cam");
+			//this.lcdCamera = new LCDCamera(VINT_HUB_SERIAL);
+			System.out.println("creation sensor");
+			//this.distanceRadar = new DistanceRadar(this, VINT_HUB_SERIAL);
+        } catch (PhidgetException e) {
+			System.out.println("error");
+            throw new RuntimeException(e);
+        }
+        System.out.println("Creation webcam");
+		this.myWebCam = new MyWebCam(this);
+        myWebCam.start();
+    }
 
 	public void actionConnectionUser(String utilisateur, String motDePasse){
 		boolean isValid = false;
@@ -53,45 +76,94 @@ public class Controller implements IControllerForWebcam, IControllerDistanceRada
 		}
 	}
 
-	public void actionDisconnectionUser(){
-
-	}
-
 	public boolean connexionClient(String tag){
 		boolean isValid = false;
+		int privilege = 0;
 		try {
-			isValid = mySQL.isUserClientValid(tag);
+			privilege = mySQL.userClientPrivilege(tag);
 		} catch (SQLException e) {
 			JfxPopup.displayError("DB ERROR", "Erreur lors de la lecture des résultats", "");
 		}
-		if (isValid){
-			viewForController.updateLabelConnectionMessage("Etat de la connexion: client connecté!");
+		if (privilege > 0){
+			isValid = true;
+			System.out.printf("ok client");
+			wrkServer.getClient().ecrire("OK,"+privilege);
+            try {
+				System.out.println(wrkServer.getClient().getIp());
+		   		this.webcamServer = new WebcamServer(this, "WSTEMFA44-14");
+            } catch (SocketException e) {
+                throw new RuntimeException(e);
+            }
+            Platform.runLater(() -> {
+				viewForController.updateLabelConnectionMessage("Etat de la connexion: client connecté!");
+			});
 		} else {
-
+			System.out.println("nok client");
 		}
+
 		return isValid;
 	}
 
 	public void deconnexionClient(){
-
+		Platform.runLater(() -> {
+			viewForController.updateLabelConnectionMessage("Etat de la connexion: serveur démarrer!");
+		});
 	}
 
-	public void wallDetected(){
+	public void wallDetected(boolean isDetected){
+		this.wallDetected = isDetected;
+		try {
+			if (isDetected && rover.getSpeed()) {
+				rover.sendValue(0, 0);
+			}
+		} catch (PhidgetException e) {
+			e.printStackTrace();
+		}
+    }
 
-	}
-
-	public void actionAutoriserConnection(boolean autoriser){
-		if (autoriser) {
+	public void actionAutoriserConnection(){
+		if (!wrkServer.isRunning()) {
 			wrkServer.demarrerServeur(3000);
+		} else {
+			wrkServer.arreterServeur();
 		}
 	}
 
-	public void sendCommand(String type, double valeur){
+	public void move(double move, double turn){
+		if (move>0.0d && wallDetected) {
+			wrkServer.getClient().ecrire("NOK");
+			return;
+		}
+        try {
+            rover.sendValue(move, turn);
+        } catch (PhidgetException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
+	public void serveurDemmarer(boolean isDemarrer) {
+		if (isDemarrer) {
+			viewForController.updateLabelConnectionMessage("Etat de la connexion: serveur démarrer!");
+			viewForController.serverOn(true);
+		} else {
+			viewForController.updateLabelConnectionMessage("Etat de la connexion: serveur éteint!");
+			viewForController.serverOn(false);
+		}
 	}
 
 	public void actionWebcamFrame(BufferedImage frame) {
+		if (lcdCamera!=null) {
+            try {
+                lcdCamera.sendFrame(frame);
+            } catch (PhidgetException | IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
+		if (webcamServer!=null) {
+			webcamServer.sendFrame(frame);
+		}
+		viewForController.afficherImageWebcam(frame);
 	}
 
 	public void changerView(String FXML) {
@@ -111,8 +183,11 @@ public class Controller implements IControllerForWebcam, IControllerDistanceRada
 
 			// Remplacer la scène
 			Scene scene = new Scene(loadScreen);
+			String css = this.getClass().getResource("/app/style.css").toExternalForm();
+			scene.getStylesheets().add(css);
 			stage.setScene(scene);
 			stage.show();
+			setViewForController(viewController);
 		} catch (IOException ex) {
 			Logger.getLogger(Controller.class.getName()).log(Level.SEVERE, null, ex);
 		}
@@ -130,6 +205,16 @@ public class Controller implements IControllerForWebcam, IControllerDistanceRada
 	}
 
 	public void quitter() {
+		if (rover!=null) {
+            try {
+                rover.closeDcMotor();
+				lcdCamera.close();
+            } catch (PhidgetException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+		wrkServer.arreterServeur();
 		System.exit(0);
 	}
 }

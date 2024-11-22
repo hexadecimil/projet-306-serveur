@@ -1,6 +1,13 @@
 package app.services;
 
 import app.ctrl.IControllerForWebcam;
+import org.openimaj.image.ImageUtilities;
+import org.openimaj.image.MBFImage;
+import org.openimaj.video.capture.VideoCapture;
+import org.openimaj.video.capture.VideoCaptureException;
+
+
+import java.awt.image.BufferedImage;
 
 /**
  * @author waeberla
@@ -10,61 +17,72 @@ import app.ctrl.IControllerForWebcam;
 public class MyWebCam extends Thread {
 
 	public static final double FPS = 60.0;
-	//private MBFImage frame1;
+	private MBFImage frame1;
 	private int height;
 	private IControllerForWebcam iControllerForWebcam;
 	private volatile boolean reading;
-	//private VideoCapture vc1;
+	private VideoCapture vc1;
 	private int width;
 
-	public MyWebCam(){
-
+	public MyWebCam(IControllerForWebcam controller) {
+		this.iControllerForWebcam = controller;
+		setName("ThreadWebcam");
+		reading = false;
 	}
 
-	/**
-	 * 
-	 * @param width
-	 * @param height
-	 * @param controller
-	 */
-	public MyWebCam(int width, int height, IControllerForWebcam controller){
-
+	private void attend(int mili) {
+		try {
+			sleep(mili);
+		} catch (InterruptedException ex) {
+			// n'arrive jamais
+		}
 	}
 
-	/**
-	 * 
-	 * @param mili
-	 */
-	private void attend(int mili){
-
-	}
-
-	private boolean createWebcam(){
-		return false;
+	private boolean createWebcam() {
+		boolean ok = false;
+		try {
+			//Création de la webcam avec la résolution comme paramètre
+			vc1 = new VideoCapture(480, 240);
+			vc1.setFPS(FPS);
+			ok = true;
+		} catch (VideoCaptureException ex) {
+			ex.printStackTrace();
+		}
+		return ok;
 	}
 
 	public int getHeight(){
-		return 0;
+		return height;
 	}
 
 	public int getWidth(){
-		return 0;
+		return width;
 	}
 
 	public boolean isReading(){
-		return false;
+		return reading;
 	}
 
 	@Override
-	public void run(){
-
+	public void run() {
+		reading = true;
+		System.out.println("start run");
+		boolean ok = createWebcam();
+		if (ok) {
+			while (reading) {
+				frame1 = vc1.getNextFrame();
+				BufferedImage img2 = ImageUtilities.createBufferedImage(frame1);
+				iControllerForWebcam.actionWebcamFrame(img2);
+			}
+			vc1.close();
+		}
 	}
 
 	/**
-	 * 
+	 *
 	 * @param reading
 	 */
 	public void setReading(boolean reading){
-
+		this.reading = reading;
 	}
-}//end MyWebCam
+}

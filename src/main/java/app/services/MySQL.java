@@ -1,7 +1,6 @@
 package app.services;
 
 import app.helpers.JfxPopup;
-
 import java.sql.*;
 
 /**
@@ -45,25 +44,26 @@ public class MySQL {
 		return isValid;
 	}
 
-	public boolean isUserClientValid(String tag) throws SQLException{
-		String sql = "SELECT * FROM t_Client WHERE tag = ?";
-		boolean isValid = false;
+	public int userClientPrivilege(String tag) throws SQLException {
+		String sql = "SELECT privilege FROM t_Client WHERE tag = ?";
+		int privilege = 0;
 
 		// Appel à la méthode de requête à la base de données
 		ResultSet resultSet = requestToDB(sql, tag);
 
-		// Si le résultat n'est pas nul, vérifiez si l'utilisateur existe
+		// Si le résultat n'est pas nul, récupérez la valeur du champ "privilege"
 		if (resultSet != null) {
 			if (resultSet.next()) {
-				isValid = true;
+				privilege = resultSet.getInt("privilege"); // Récupère la valeur du champ "privilege"
 			}
 		}
 
 		// Fermer les ressources ici (resultSet et connection)
 		closeResources(resultSet);
 
-		return isValid;
-    }
+		return privilege; // Retourner la valeur du privilège
+	}
+
 
 	/**
 	 * Effectue la requête à la base de données et renvoie le ResultSet
@@ -84,8 +84,11 @@ public class MySQL {
 
 			// Préparer la requête avec les paramètres
 			preparedStatement = connection.prepareStatement(sql);
-			preparedStatement.setString(1, args[0]); // Premier paramètre: utilisateur
-			preparedStatement.setString(2, args[1]); // Deuxième paramètre: mot de passe
+			preparedStatement.setString(1, args[0]);
+			if (args.length>1) {
+				preparedStatement.setString(2, args[1]); // Deuxième paramètre: mot de passe
+			}
+
 
 			// Exécuter la requête
 			resultSet = preparedStatement.executeQuery();

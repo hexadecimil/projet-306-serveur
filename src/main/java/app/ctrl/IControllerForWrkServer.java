@@ -12,6 +12,8 @@ public interface IControllerForWrkServer {
 
 	void deconnexionClient();
 
-	void sendCommand(String type, double valeur);
+	void move(double move, double turn);
+
+	void serveurDemmarer(boolean isDemarrer);
 
 }

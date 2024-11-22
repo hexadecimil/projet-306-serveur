@@ -8,6 +8,6 @@ package app.ctrl;
  */
 public interface IControllerDistanceRadar {
 
-	void wallDetected();
+	void wallDetected(boolean isDetected);
 
 }

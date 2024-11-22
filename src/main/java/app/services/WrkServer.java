@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 
 /**
@@ -29,7 +30,10 @@ public class WrkServer extends Thread {
         try {
             serverSocket = new ServerSocket(port);
             serverSocket.setSoTimeout(1000);
+            this.start();
             //wrk.recevoirMessageInfo("Serveur démarré");
+            controller.serveurDemmarer(true);
+            running = true;
         } catch (IOException ex) {
 
         } catch (Exception exc) {
@@ -38,7 +42,11 @@ public class WrkServer extends Thread {
 
     public void arreterServeur() {
         try {
-            serverSocket.close();
+            if (serverSocket != null) {
+                serverSocket.close();
+                running = false;
+                controller.serveurDemmarer(false);
+            }
         } catch (IOException ex) {
             //wrk.recevoirMessageInfo("Erreur dans l'arrêt du serveur.");
         }
@@ -58,22 +66,21 @@ public class WrkServer extends Thread {
 
     public void recevoirMessage(String msg) {
         String[] args = msg.split(",");
+        System.out.println(msg);
+        System.out.println(args[0]);
         switch (args[0]) {
-            case "turn":
+            case "move":
                 if (client.isConnected()) {
-                    Double valeur;
+                    double move;
+                    double turn;
                     try {
-                        valeur = Double.parseDouble(args[1]);
+                        move = Double.parseDouble(args[1]);
+                        turn = Double.parseDouble(args[2]);
                     } catch (NumberFormatException ex) {
-                        valeur = 0.0;
+                        move = 0.0;
+                        turn = 0.0;
                     }
-
-                    controller.sendCommand("turn", valeur);
-                }
-                break;
-            case "move_forward":
-                if (client.isConnected()) {
-
+                    controller.move(move, turn);
                 }
                 break;
             case "button":
@@ -82,6 +89,7 @@ public class WrkServer extends Thread {
                 }
                 break;
             case "connect":
+                System.out.println(args[1]);
                 String tag = args[1];
                 if (tag != null && !tag.isEmpty()) {
                     if (controller.connexionClient(tag)) {
@@ -90,12 +98,14 @@ public class WrkServer extends Thread {
                 }
                 break;
             default:
+                System.out.println("default");
                 break;
         }
     }
 
     public void removeClient() {
-        this.client = client;
+        this.client = null;
+        controller.deconnexionClient();
     }
 
     @Override

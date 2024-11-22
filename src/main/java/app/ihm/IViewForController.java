@@ -1,6 +1,8 @@
 package app.ihm;
 
 
+import java.awt.image.BufferedImage;
+
 /**
  * @author tornarem07
  * @version 1.0
@@ -8,7 +10,7 @@ package app.ihm;
  */
 public interface IViewForController {
 
-	 void afficherImageWebcam();
+	 void afficherImageWebcam(BufferedImage image);
 
 	void afficherVueConnexion();
 
@@ -21,5 +23,7 @@ public interface IViewForController {
 	void updateLabelConnectionMessage(String message);
 
 	void connectCredentialsError();
+
+	void serverOn(boolean isOn);
 
 }
